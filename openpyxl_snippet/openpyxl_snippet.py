@@ -31,3 +31,11 @@ for y in range(3, 6):
 # セル名で範囲指定してデータ取得
 for row in ws["B3:C5"]:
   print([c.value for c in row])
+
+# 文字の色を取得
+cell_text_color = ws["B3"].fill.fgColor.value
+print(cell_text_color)
+
+# 背景の色を取得
+cell_bg_color = ws["B3"].fill.bgColor.value
+print(cell_bg_color)
