@@ -2,8 +2,6 @@
 
 import os
 import pathlib
-import glob
-import shutil
 
 
 # ファイル作成
