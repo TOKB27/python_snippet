@@ -2,7 +2,7 @@ import pytesseract
 from PIL import Image
 
 # 画像ファイルのパス
-image_path = 'ocr.png'
+image_path = 'XSS.jpg'
 
 # 画像を開く
 image = Image.open(image_path)
