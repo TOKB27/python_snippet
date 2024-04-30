@@ -181,3 +181,28 @@ print(C)
 # [[ 18  21  24]
 #  [ 54  66  78]
 #  [ 90 111 132]]
+
+
+## 統計量の求め方 ##
+x = np.random.randint(0, 10, (3, 4))
+print(x)
+# [[9 4 8 6]
+#  [8 2 6 6]
+#  [7 5 8 1]]
+
+# 平均値
+print(x.mean())
+print(x.mean(axis=1))  # 各行ごとに平均
+
+# 分散
+print(x.var())
+
+# 標準偏差
+print(x.std())
+
+# 最大値
+print(x.max())
+
+# 最小値
+print(x.min())
+
