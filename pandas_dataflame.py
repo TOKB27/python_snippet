@@ -113,3 +113,33 @@ print(df)
 #    列1 列2
 # 0   1  A
 # 2   3  C
+
+# 平均
+print(df.mean())
+# 列1    2.0
+# dtype: float64
+
+## 並べ替え ##
+data = {'列1': [2, 4, 3, 1, 0],
+        '列2': [9, 5, 8, 6, 7]}
+df = pd.DataFrame(data)
+
+# 列1を昇順に並べ替え
+df_as = df.sort_values(by='列1')
+print(df_as)
+#    列1  列2
+# 4   0   7
+# 3   1   6
+# 0   2   9
+# 2   3   8
+# 1   4   5
+
+# 列1を降順に並べ替え
+df_de = df.sort_values(by='列1', ascending=False)
+print(df_de)
+#    列1  列2
+# 1   4   5
+# 2   3   8
+# 0   2   9
+# 3   1   6
+# 4   0   7
