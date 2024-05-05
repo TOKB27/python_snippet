@@ -123,6 +123,13 @@ print(df.mean())
 data = {'列1': [2, 4, 3, 1, 0],
         '列2': [9, 5, 8, 6, 7]}
 df = pd.DataFrame(data)
+print(df)
+#    列1  列2
+# 0   2   9
+# 1   4   5
+# 2   3   8
+# 3   1   6
+# 4   0   7
 
 # 列1を昇順に並べ替え
 df_as = df.sort_values(by='列1')
@@ -143,3 +150,43 @@ print(df_de)
 # 0   2   9
 # 3   1   6
 # 4   0   7
+
+
+## データの選択 ##
+
+# df.iloc[行, 列]
+print(df.iloc[0, 0])
+# 2
+print(df.iloc[1, 1])
+# 5
+
+# すべての行の、最後の列を選択
+t = df.iloc[:, -1]
+print(t)
+# 0    9
+# 1    5
+# 2    8
+# 3    6
+# 4    7
+# Name: 列2, dtype: int64
+
+# 列2が7より大きい要素を選択
+mask = df['列2'] > 7
+print(mask)
+# 0     True
+# 1    False
+# 2     True
+# 3    False
+# 4    False
+# Name: 列2, dtype: bool
+
+print(df[mask])
+#    列1  列2
+# 0   2   9
+# 2   3   8
+
+# 1行にまとめて書く場合
+print(df[df['列2'] > 7])
+#    列1  列2
+# 0   2   9
+# 2   3   8
