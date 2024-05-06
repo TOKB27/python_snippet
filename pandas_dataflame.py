@@ -190,3 +190,34 @@ print(df[df['列2'] > 7])
 #    列1  列2
 # 0   2   9
 # 2   3   8
+
+# 複数の条件指定
+print(df[(df['列2'] > 7) & (df['列1'] > 2)])
+#    列1  列2
+# 2   3   8
+
+
+## 置換 ##
+
+# 新しい列 target を None で初期化
+df['target'] = None
+print(df)
+#    列1  列2 target
+# 0   2   9   None
+# 1   4   5   None
+# 2   3   8   None
+# 3   1   6   None
+# 4   0   7   None
+
+# 2より大きい時は「over」、2以下は「under」に置換する。
+mask1 = df['列1'] > 2
+mask2 = df['列1'] <= 2
+df.loc[mask1, 'target'] = 'over'
+df.loc[mask2, 'target'] = 'under'
+print(df)
+#    列1  列2 target
+# 0   2   9  under
+# 1   4   5   over
+# 2   3   8   over
+# 3   1   6  under
+# 4   0   7  under
