@@ -221,3 +221,22 @@ print(df)
 # 2   3   8   over
 # 3   1   6  under
 # 4   0   7  under
+
+
+# 欠損値のあるレコードを削除
+df.iloc[0, 0] = None
+print(df)
+#     列1  列2 target
+# 0  NaN   9  under
+# 1  4.0   5   over
+# 2  3.0   8   over
+# 3  1.0   6  under
+# 4  0.0   7  under
+df_dropna = df.dropna()
+print(df_dropna)
+#     列1  列2 target
+# 1  4.0   5   over
+# 2  3.0   8   over
+# 3  1.0   6  under
+# 4  0.0   7  under
+
