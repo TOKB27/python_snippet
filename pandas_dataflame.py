@@ -240,3 +240,29 @@ print(df_dropna)
 # 3  1.0   6  under
 # 4  0.0   7  under
 
+
+## NumPyのndarrayとの変換 ##
+
+# ndarrayへの変換
+print(type(df_dropna))
+# <class 'pandas.core.frame.DataFrame'>
+print(type(df_dropna.values))
+# <class 'numpy.ndarray'>
+print(df_dropna.values)
+# [[4.0 5 'over']
+#  [3.0 8 'over']
+#  [1.0 6 'under']
+#  [0.0 7 'under']]
+
+# ndarrayからpd.DataFrameへの変換
+import numpy as np
+df = pd.DataFrame(
+    data=np.random.randn(5, 5)
+)
+print(df)
+#           0         1         2         3         4
+# 0  0.223668  0.014736  0.532476 -0.814704 -0.344570
+# 1  0.422887  0.522609 -0.552856 -0.522329  0.578230
+# 2  1.248147  0.371750  1.011887  0.346325  0.918026
+# 3 -0.242473  0.771075 -0.586427  0.080307  1.132582
+# 4 -0.069031 -0.065962  1.595269 -0.967261  1.079485
