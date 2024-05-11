@@ -17,8 +17,25 @@ plt.show()  # 表示
 ## 棒グラフ ##
 a = range(0, 5)
 b = [4,8,3,6,9]
-plt.bar(a, b)
+plt.bar(a, b)    # 縦棒の棒グラフ
 # plt.barh(a, b) # 横棒の棒グラフ
 plt.show()
 
 
+## 散布図 ##
+x = [14, 21, 42, 13, 25, 65]
+y = [5, 15, 2, 25, 14, 35]
+plt.scatter(x,y)
+plt.show()
+
+
+## 円グラフ ##
+labels = ["A", "B", "C", "D", "E"]
+data = [34, 22, 18, 43, 19]
+ex = [0.1, 0, 0, 0, 0]
+colors =["navy", "yellow", "blue", "red", "green"]
+plt.pie(data, explode=ex, labels=labels, colors=colors, autopct="%1.1f%%", counterclock=False)
+plt.show()
+# autopct="%1.1f%%"は小数点の表示桁数。1.1とすると1つ。1.2とすると２つ
+# explodeオプションで1つめの要素を10%ずらしている。
+# counterclockオプションでFalseにすると時計回り、Trueだと反時計回り。
