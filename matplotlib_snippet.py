@@ -43,11 +43,8 @@ plt.show()
 
 
 ## ヒストグラム ##
-# 平均10、標準偏差10 の正規乱数を100件生成
-x = np.random.normal(10, 10, 1000)
+x = np.random.normal(10, 10, 1000)  # 平均10、標準偏差10 の正規乱数を100件生成
 plt.hist(x, bins=10)
 # 引数にbins=数字でヒストグラムの棒の数を指定可能
 # orientation="horizontal"を指定することで横棒として描画も可能
 plt.show()
-
-
