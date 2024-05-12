@@ -1,6 +1,7 @@
 ### グラフ描画ライブラリMatplotlib ###
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 x_data = [20, 40, 60, 80 ]
 y_data = [10, 5, 3, 1]
@@ -39,3 +40,14 @@ plt.show()
 # autopct="%1.1f%%"は小数点の表示桁数。1.1とすると1つ。1.2とすると２つ
 # explodeオプションで1つめの要素を10%ずらしている。
 # counterclockオプションでFalseにすると時計回り、Trueだと反時計回り。
+
+
+## ヒストグラム ##
+# 平均10、標準偏差10 の正規乱数を100件生成
+x = np.random.normal(10, 10, 1000)
+plt.hist(x, bins=10)
+# 引数にbins=数字でヒストグラムの棒の数を指定可能
+# orientation="horizontal"を指定することで横棒として描画も可能
+plt.show()
+
+
