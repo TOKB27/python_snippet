@@ -48,3 +48,23 @@ plt.hist(x, bins=10)
 # 引数にbins=数字でヒストグラムの棒の数を指定可能
 # orientation="horizontal"を指定することで横棒として描画も可能
 plt.show()
+
+
+## 複数グラフの描画 ##
+# add_subplot(行数, 列数, 番号) 
+
+x1, y1 = range(0, 4), [10,15,17,20]
+x2, y2 = range(0, 4), [30,20,15,10]
+fig = plt.figure()
+
+# 1行2列の1番目
+a1 = fig.add_subplot(1, 2, 1)
+a1.bar(x1, y1)
+a1.set_title("A")
+
+# 1行2列の2番目
+a2 = fig.add_subplot(1, 2, 2)
+a2.bar(x2, y2)
+a2.set_title("B")
+
+plt.show()
