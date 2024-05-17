@@ -59,6 +59,8 @@ list1.clear()
 print(list1) # []
 
 
+## ソート ##
+
 # 順番反転
 list1 = [1, 2, 3]
 list1.reverse()
@@ -81,3 +83,21 @@ print(list1) # ['apple', 'banana', 'melon']
 list1 = [2, 4, 3, 1]
 list1.sort(reverse=True)
 print(list1) # [4, 3, 2, 1]
+
+
+## リスト内包表記 ##
+
+# 基本的なリスト内包表記
+squares = [x**2 for x in range(10)]
+print(squares)
+# [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+# 条件付きリスト内包表記
+evens = [x for x in range(10) if x % 2 == 0]
+print(evens)
+# [0, 2, 4, 6, 8]
+
+# ネストしたリスト内包表記
+combinations = [(x, y) for x in range(3) for y in range(3)]
+print(combinations)
+# [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
