@@ -55,3 +55,18 @@ column_grouped = ws.column_dimensions[column_letter].outline_level > 0
 # 結果を表示
 print(f"行 {cell_row} はグループ化されていますか？ {'はい' if row_grouped else 'いいえ'}")
 print(f"列 {column_letter} はグループ化されていますか？ {'はい' if column_grouped else 'いいえ'}")
+
+
+## エクセルの作成や新規データ書き込み
+
+# 新しいワークブックを作成
+wb = openpyxl.Workbook()
+
+# アクティブなシートを取得
+ws = wb.active
+
+# セルA1に"Hello World"を書き込む
+ws["A1"] = "Hello World"
+
+# ファイルを保存
+wb.save("hello_world.xlsx")
