@@ -33,3 +33,34 @@ sns.histplot(data, bins=30, kde=True)
 
 # プロットの表示
 plt.show()
+
+
+## 散布図の作成 ##
+# サンプルデータの作成
+iris_data = {
+    'sepal_length': [5.1, 4.9, 4.7, 4.6, 5.0],
+    'sepal_width': [3.5, 3.0, 3.2, 3.1, 3.6],
+    'species': ['setosa', 'setosa', 'setosa', 'setosa', 'setosa']
+}
+iris = pd.DataFrame(iris_data)
+
+# 散布図の作成
+sns.scatterplot(x='sepal_length', y='sepal_width', data=iris, hue='species')
+
+# プロットの表示
+plt.show()
+
+
+## ボックスプロットの作成 ##
+# サンプルデータの作成
+tips_data = {
+    'total_bill': [16.99, 10.34, 21.01, 23.68, 24.59],
+    'day': ['Sun', 'Sun', 'Sun', 'Sun', 'Sun'],
+}
+tips = pd.DataFrame(tips_data)
+
+# ボックスプロットの作成
+sns.boxplot(x='day', y='total_bill', data=tips)
+
+# プロットの表示
+plt.show()
