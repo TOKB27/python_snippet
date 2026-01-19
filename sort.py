@@ -9,8 +9,11 @@ sorted_data = dict(
     sorted(data.items(), key=lambda x: x[1]["score"])
 )
 
-print(sorted_data)
-
+# 複数キーでソート
+sorted_data = sorted(
+    data.items(),
+    key=lambda x: (x[1]["age"], x[1]["score"])
+)
 
 # 辞書 → リスト → 辞書 の場合
 data = {
