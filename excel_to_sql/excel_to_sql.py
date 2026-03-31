@@ -1,15 +1,18 @@
-from pathlib import Path
-from collections import defaultdict
-import pandas as pd
+import os
+import io
 import math
+import logging
+from collections import defaultdict
 
-# =========================
-# 設定
-# ToDo: 設定箇所およびカラム名を「columnA」の形式にしているところはDBのカラム名に修正する
-# PathでS3に配置する場合は、S3を指定する処理に置き換える
-# SQLとの接続は環境に合わせて修正する
-# =========================
-INPUT_DIR = Path("./excel_files")
+import boto3
+import pandas as pd
+import psycopg2
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+s3_client = boto3.client("s3")
+
 TARGET_SHEET_KEYWORD = "SheetName"
 TABLE_NAME = "target_table"
 
@@ -18,9 +21,6 @@ WHERE_KEY_COL_A = "columnA"
 WHERE_KEY_COL_B = "columnB"
 
 
-# =========================
-# ユーティリティ
-# =========================
 def is_empty(value) -> bool:
     if value is None:
         return True
@@ -64,7 +64,7 @@ def build_db_record_from_row(row_values: list):
     record = {
         "columnA": excel_map["A"],
         "columnB": excel_map["B"],
-        # C は status のため除外
+        # C列は status のため除外
         "columnD": excel_map["D"],
         "columnE": excel_map["E"],
         "columnF": excel_map["F"],
@@ -97,9 +97,6 @@ def build_db_record_from_row(row_values: list):
     return status, record
 
 
-# =========================
-# SQL生成
-# =========================
 def build_insert_sql_and_params(record: dict):
     insert_record = dict(record)
     insert_record["delete_flag"] = None
@@ -140,9 +137,6 @@ def build_delete_sql_and_params(record: dict):
     return sql, params
 
 
-# =========================
-# Excel処理
-# =========================
 def process_sheet(df: pd.DataFrame, file_name: str, sheet_name: str):
     """
     1シート分を処理して [(sql, params), ...] を返す。
@@ -155,12 +149,16 @@ def process_sheet(df: pd.DataFrame, file_name: str, sheet_name: str):
     for row_idx in range(start_row_idx, len(df)):
         row = df.iloc[row_idx]
 
-        # A～Z列(0～25)を取得
+        # A～Z列(0～25)
         row_values = [row[i] if i < len(row) else None for i in range(26)]
 
-        # C列が空ならそのシートの処理を終了
+        # C列が空なら、そのシートの処理終了
         c_value = row_values[2]
         if is_empty(c_value):
+            logger.info(
+                "Stop reading sheet because column C is empty. file=%s sheet=%s excel_row=%s",
+                file_name, sheet_name, row_idx + 1
+            )
             break
 
         status, record = build_db_record_from_row(row_values)
@@ -174,53 +172,104 @@ def process_sheet(df: pd.DataFrame, file_name: str, sheet_name: str):
         elif status == "NoChange":
             continue
         else:
-            # 想定外の値は無視
-            continue
+            logger.warning(
+                "Skip unknown status. file=%s sheet=%s excel_row=%s status=%s",
+                file_name, sheet_name, row_idx + 1, status
+            )
 
     return statements
 
 
-def process_excel_file(file_path: Path):
+def read_excel_from_s3(bucket: str, key: str) -> io.BytesIO:
+    response = s3_client.get_object(Bucket=bucket, Key=key)
+    body = response["Body"].read()
+    return io.BytesIO(body)
+
+
+def process_excel_file_from_s3(bucket: str, key: str):
     """
-    1ファイル分を処理して [(sql, params), ...] を返す。
+    S3上の1ファイルを処理して [(sql, params), ...] を返す。
     """
     statements = []
-    excel_file = pd.ExcelFile(file_path)
+    file_obj = read_excel_from_s3(bucket, key)
+
+    excel_file = pd.ExcelFile(file_obj)
 
     for sheet_name in excel_file.sheet_names:
         if TARGET_SHEET_KEYWORD not in sheet_name:
             continue
 
         df = pd.read_excel(
-            file_path,
+            file_obj,
             sheet_name=sheet_name,
             header=None,
             dtype=object
         )
 
-        statements.extend(process_sheet(df, file_path.name, sheet_name))
+        # read_excel後に同じ BytesIO を再利用すると位置が進むため、
+        # シートごとに読み直せるよう最初から開き直す
+        # ExcelFileオブジェクトから読む形に変更
+        df = pd.read_excel(
+            excel_file,
+            sheet_name=sheet_name,
+            header=None,
+            dtype=object
+        )
+
+        sheet_statements = process_sheet(df, key, sheet_name)
+        statements.extend(sheet_statements)
 
     return statements
 
 
-def collect_sql_statements(input_dir: Path = INPUT_DIR):
+def list_excel_keys(bucket: str, prefix: str):
     """
-    複数Excelを処理して、最終的に [(sql, params), ...] を返す。
+    S3FILEPATH 配下の Excel ファイル一覧を返す。
     """
-    excel_files = []
-    for pattern in ("*.xlsx", "*.xls", "*.xlsm"):
-        excel_files.extend(input_dir.glob(pattern))
+    keys = []
+    continuation_token = None
+
+    while True:
+        kwargs = {
+            "Bucket": bucket,
+            "Prefix": prefix,
+            "MaxKeys": 1000,
+        }
+        if continuation_token:
+            kwargs["ContinuationToken"] = continuation_token
+
+        response = s3_client.list_objects_v2(**kwargs)
+
+        for item in response.get("Contents", []):
+            key = item["Key"]
+            lower_key = key.lower()
+
+            if lower_key.endswith(".xlsx") or lower_key.endswith(".xls") or lower_key.endswith(".xlsm"):
+                keys.append(key)
+
+        if response.get("IsTruncated"):
+            continuation_token = response.get("NextContinuationToken")
+        else:
+            break
+
+    return keys
+
+
+def collect_sql_statements_from_s3(bucket: str, prefix: str):
+    """
+    S3配下の複数Excelを処理し、[(sql, params), ...] を返す。
+    """
+    keys = list_excel_keys(bucket, prefix)
+    logger.info("Excel files found: %s", len(keys))
 
     all_statements = []
-    for file_path in sorted(excel_files):
-        all_statements.extend(process_excel_file(file_path))
+    for key in keys:
+        logger.info("Processing file: s3://%s/%s", bucket, key)
+        all_statements.extend(process_excel_file_from_s3(bucket, key))
 
     return all_statements
 
 
-# =========================
-# SQL実行しやすくする補助
-# =========================
 def group_statements_by_sql(statements):
     """
     [(sql, params), ...] を
@@ -229,7 +278,6 @@ def group_statements_by_sql(statements):
       sql2: [params3, params4, ...]
     }
     にまとめる。
-    同じSQLごとに executemany しやすくするための関数。
     """
     grouped = defaultdict(list)
     for sql, params in statements:
@@ -237,57 +285,84 @@ def group_statements_by_sql(statements):
     return grouped
 
 
+def get_db_connection():
+    """
+    DB接続。
+    実際の接続情報は環境変数から取得する想定。
+    例:
+      DB_HOST
+      DB_PORT
+      DB_NAME
+      DB_USER
+      DB_PASSWORD
+    """
+    host = os.environ["DB_HOST"]
+    port = int(os.environ.get("DB_PORT", "5432"))
+    dbname = os.environ["DB_NAME"]
+    user = os.environ["DB_USER"]
+    password = os.environ["DB_PASSWORD"]
+
+    conn = psycopg2.connect(
+        host=host,
+        port=port,
+        dbname=dbname,
+        user=user,
+        password=password,
+    )
+    return conn
+
+
 def execute_statements_efficiently(connection, statements):
     """
-    実行効率を考えて、同じSQLごとに executemany する想定の関数。
+    同じSQLごとにまとめて executemany する。
     実際のSQL実行箇所はコメントアウトしている。
     """
     grouped = group_statements_by_sql(statements)
 
     for sql, params_list in grouped.items():
-        print("SQL:", sql)
-        print("件数:", len(params_list))
-        print("先頭params例:", params_list[0] if params_list else None)
-        print("")
+        logger.info("Prepared SQL batch. sql=%s count=%s", sql, len(params_list))
 
         # 実際に実行する場合はコメントアウトを外す
         # with connection.cursor() as cursor:
         #     cursor.executemany(sql, params_list)
-        #
-        # connection.commit()
+
+    # 実際にコミットする場合はコメントアウトを外す
+    # connection.commit()
 
 
-# =========================
-# 使い方例
-# =========================
-def main():
-    statements = collect_sql_statements(INPUT_DIR)
+def lambda_handler(event, context):
+    bucket = os.environ["S3BAKETNAME"]
+    prefix = os.environ["S3FILEPATH"]
 
-    # 生成結果の確認
-    print(f"生成件数: {len(statements)}")
-    for i, (sql, params) in enumerate(statements[:5], start=1):
-        print(f"--- {i}件目 ---")
-        print("sql   =", sql)
-        print("params=", params)
-        print("")
+    logger.info("Start Lambda. bucket=%s prefix=%s", bucket, prefix)
 
-    # 実行したい場合のイメージ
-    # import psycopg2
-    # conn = psycopg2.connect(
-    #     host="your-host",
-    #     port=5432,
-    #     dbname="your-db",
-    #     user="your-user",
-    #     password="your-password",
-    # )
-    #
+    statements = collect_sql_statements_from_s3(bucket, prefix)
+
+    logger.info("Total SQL statements: %s", len(statements))
+
+    # DB実行イメージ
+    # conn = None
     # try:
+    #     conn = get_db_connection()
     #     execute_statements_efficiently(conn, statements)
+    # except Exception:
+    #     if conn:
+    #         conn.rollback()
+    #     logger.exception("Failed to execute SQL")
+    #     raise
     # finally:
-    #     conn.close()
+    #     if conn:
+    #         conn.close()
 
-    return statements
-
-
-if __name__ == "__main__":
-    statements = main()
+    return {
+        "statusCode": 200,
+        "message": "Processed successfully",
+        "statementCount": len(statements),
+        "sample": [
+            {
+                "sql": sql,
+                "params": list(params)
+            }
+            for sql, params in statements[:3]
+        ],
+    }
